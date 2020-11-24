@@ -1,6 +1,6 @@
 class ArticlesController < ApplicationController
   before_action :set_article, only: [:show, :update, :destroy]
-  before_action :authenticate_user, only: [:new]
+  before_action :authenticate_user, only: [:new, :show, :update, :destroy]
   
   # GET /articles
   def index
@@ -17,6 +17,7 @@ class ArticlesController < ApplicationController
   # POST /articles
   def create
     @article = Article.new(article_params)
+    @article.user_id = current_user.id
 
     if @article.save
       render json: @article, status: :created, location: @article
@@ -27,16 +28,24 @@ class ArticlesController < ApplicationController
 
   # PATCH/PUT /articles/1
   def update
-    if @article.update(article_params)
-      render json: @article
-    else
+    if article_params[user_id] != current_user.id
       render json: @article.errors, status: :unprocessable_entity
+    else
+      if @article.update(article_params)
+        render json: @article
+      else
+        render json: @article.errors, status: :unprocessable_entity
+      end
     end
   end
 
   # DELETE /articles/1
   def destroy
-    @article.destroy
+    if article_params[user_id] != current_user.id
+      render json: @article.errors, status: :unprocessable_entity
+    else
+      @article.destroy
+    end
   end
 
   private
